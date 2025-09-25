@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Mantenimiento{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Estado de Máquinas</h2>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Máquina 1</h5>
+                <p class="card-text">Rodamiento</p>
+                <span class="badge bg-success fs-5">🟢 OK</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Máquina 2</h5>
+                <p class="card-text">Correa</p>
+                <span class="badge bg-warning fs-5">🟡 Pronto a fallo</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Máquina 3</h5>
+                <p class="card-text">Motor</p>
+                <span class="badge bg-danger fs-5">🔴 Cambio urgente</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
