@@ -5,7 +5,7 @@ from routes.repuestos_routes import repuestos_bp
 from routes.contacto_routes import contacto_bp
 from flask_migrate import Migrate
 from models.models import db
-from routes.monitor_routes import bp as monitor_bp
+from routes.monitor_routes import monitor_bp
 from routes.stock_routes import bp as stock_bp
 
 def create_app():
