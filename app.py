@@ -6,7 +6,7 @@ from routes.contacto_routes import contacto_bp
 from flask_migrate import Migrate
 from models.models import db
 from routes.monitor_routes import monitor_bp
-from routes.stock_routes import bp as stock_bp
+from routes.stock_routes import stock_bp
 
 def create_app():
     app = Flask(__name__)
