@@ -1,36 +1,65 @@
-from flask import Blueprint, render_template
-from models.models import Machine, Sector
+from flask import Blueprint, render_template, request, redirect, url_for
 
 monitor_bp = Blueprint('monitor', __name__)
 
+# Lista global de máquinas para pruebas
+machines = [
+    {"id": 1, "name": "Máquina A", "status": "Activo"},
+    {"id": 2, "name": "Máquina B", "status": "Inactivo"},
+]
+
 @monitor_bp.route('/')
 def dashboard():
-    machines = Machine.query.all()
     return render_template('monitor/dashboard.html', machines=machines)
 
-@monitor_bp.route('/machine/<int:machine_id>')
-def machine_detail(machine_id):
-    machine = Machine.query.get_or_404(machine_id)
-    return render_template('monitor/machine_detail.html', machine=machine)
+@monitor_bp.route('/machine/<int:machine_id>/edit', methods=['GET', 'POST'])
+def edit_machine(machine_id):
+    machine = next((m for m in machines if m["id"] == machine_id), None)
+    if not machine:
+        return "Máquina no encontrada", 404
+    if request.method == 'POST':
+        machine["name"] = request.form['name']
+        machine["status"] = request.form['status']
+        return redirect(url_for('monitor.dashboard'))
+    return render_template('monitor/machine_form.html', machine=machine)
+
+@monitor_bp.route('/machine/new', methods=['GET', 'POST'])
+def new_machine():
+    if request.method == 'POST':
+        new_id = max([m["id"] for m in machines]) + 1 if machines else 1
+        name = request.form['name']
+        status = request.form['status']
+        machines.append({"id": new_id, "name": name, "status": status})
+        return redirect(url_for('monitor.dashboard'))
+    return render_template('monitor/machine_form.html', machine=None)
+
+@monitor_bp.route('/machine/<int:machine_id>/delete', methods=['POST'])
+def delete_machine(machine_id):
+    global machines
+    machines = [m for m in machines if m["id"] != machine_id]
+    return redirect(url_for('monitor.dashboard'))
 
 @monitor_bp.route('/sectors')
 def sectors():
-    sectors = Sector.query.all()
+    sectors = [
+        {"id": 1, "name": "Sector 1"},
+        {"id": 2, "name": "Sector 2"},
+    ]
     return render_template('monitor/sectors.html', sectors=sectors)
 
 @monitor_bp.route('/sector/<int:sector_id>')
 def sector_detail(sector_id):
-    sector = Sector.query.get_or_404(sector_id)
+    sector = {"id": sector_id, "name": f"Sector {sector_id}"}
     return render_template('monitor/sector_detail.html', sector=sector)
 
 @monitor_bp.route('/alerts')
 def alerts():
-    alerts = []  # Reemplaza con lógica real
+    alerts = []
     return render_template('monitor/alerts.html', alerts=alerts)
 
 @monitor_bp.route('/reports')
 def reports():
-    reports = []  # Reemplaza con lógica real
+    reports = []
     return render_template('monitor/reports.html', reports=reports)
 
 @monitor_bp.route('/settings')
