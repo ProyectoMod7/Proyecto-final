@@ -1,7 +1,13 @@
-from flask import Blueprint
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+from flask import Blueprint, render_template, redirect, url_for, session
 
-@auth_bp.route("/login")
-def login():
-    return "Página de login (en construcción)"
+auth_bp = Blueprint("auth", __name__)
+
+@auth_bp.route("/auth")
+def auth():
+    return render_template("auth/index.html")
+
+@auth_bp.route("/unlock")
+def unlock():
+    session["unlocked"] = True
+    return redirect(url_for("maquinas.index"))

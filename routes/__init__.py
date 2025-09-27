@@ -1,4 +1,3 @@
-
 from .auth_routes import auth_bp
 from .maquinas_routes import maquinas_bp
 from .piezas_routes import piezas_bp
