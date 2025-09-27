@@ -19,6 +19,13 @@
         </div>
     </form>
 
+    <!-- Botón de reporte PDF -->
+    <div class="mb-3">
+        <a href="{{ url_for('maquinas.pdf_reporte') }}" class="btn btn-success">
+            📄 Generar reporte (Estado actual)
+        </a>
+    </div>
+
     <!-- Listado de máquinas -->
     <table class="table table-striped">
         <thead>
