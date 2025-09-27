@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h3>{{ 'Editar Máquina' if maquina else 'Nueva Máquina' }}</h3>
+  <form method="post" action="{{ url_for('maquinas.edit' if maquina else 'maquinas.crear', id=(maquina.id if maquina else '') ) }}">
+    <div class="mb-3">
+      <label>Nombre</label>
+      <input type="text" name="nombre" class="form-control" value="{{ maquina.nombre if maquina else '' }}" required>
+    </div>
+    <div class="mb-3">
+      <label>Marca</label>
+      <input type="text" name="marca" class="form-control" value="{{ maquina.marca if maquina else '' }}">
+    </div>
+    <div class="mb-3">
+      <label>Modelo</label>
+      <input type="text" name="modelo" class="form-control" value="{{ maquina.modelo if maquina else '' }}">
+    </div>
+    <button class="btn btn-primary" type="submit">Guardar</button>
+  </form>
+</div>
+{% endblock %}

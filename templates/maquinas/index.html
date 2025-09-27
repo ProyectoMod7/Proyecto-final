@@ -1,20 +1,56 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Máquinas</h2>
-<a href="{{ url_for('maquinas.new') }}" class="btn btn-primary">Nueva Máquina</a>
-<table class="table">
-  <tr>
-    <th>ID</th><th>Nombre</th><th>Acciones</th>
-  </tr>
-  {% for m in maquinas %}
-  <tr>
-    <td>{{ m.id }}</td>
-    <td>{{ m.nombre }}</td>
-    <td>
-      <a href="{{ url_for('maquinas.edit', id=m.id) }}" class="btn btn-sm btn-warning">Editar</a>
-      <a href="{{ url_for('maquinas.delete', id=m.id) }}" class="btn btn-sm btn-danger">Eliminar</a>
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="container mt-4">
+    <h2>Gestión de Máquinas</h2>
+
+    <!-- Formulario para crear -->
+    <form action="{{ url_for('maquinas.crear') }}" method="post" class="mb-4">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre de la máquina" required>
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="descripcion" class="form-control" placeholder="Descripción">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Agregar</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Listado de máquinas -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in maquinas %}
+            <tr>
+                <td>{{ m.id }}</td>
+                <td>{{ m.nombre }}</td>
+                <td>{{ m.descripcion }}</td>
+                <td>
+                    <!-- Botón editar -->
+                    <form action="{{ url_for('maquinas.editar', id=m.id) }}" method="post" class="d-inline">
+                        <input type="text" name="nombre" value="{{ m.nombre }}" class="form-control mb-1">
+                        <input type="text" name="descripcion" value="{{ m.descripcion }}" class="form-control mb-1">
+                        <button type="submit" class="btn btn-warning btn-sm">Editar</button>
+                    </form>
+
+                    <!-- Botón eliminar -->
+                    <form action="{{ url_for('maquinas.eliminar', id=m.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

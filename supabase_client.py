@@ -1,9 +1,14 @@
+# supabase_client.py
+import os
+from dotenv import load_dotenv
 from supabase import create_client
-from config import Config
 
-# Inicializar cliente de Supabase
-supabase = create_client(
-    Config.SUPABASE_URL,
-    Config.SUPABASE_KEY
-)
-# Ahora puedes usar `supabase` para interactuar con tu base de datos
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_KEY en .env")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)

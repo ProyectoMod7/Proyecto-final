@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>{{ 'Editar Pieza' if pieza else 'Nueva Pieza' }}</h3>
+<form method="post">
+  <div class="mb-3">
+    <label>Nombre</label>
+    <input type="text" name="nombre" class="form-control" value="{{ pieza.nombre if pieza else '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label>Fabricante</label>
+    <select name="fabricante_id" class="form-control">
+      <option value="">-- Seleccione --</option>
+      {% for f in fabricantes %}
+        <option value="{{ f.id }}" {% if pieza and pieza.fabricante_id == f.id %}selected{% endif %}>{{ f.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Material</label>
+    <select name="material_id" class="form-control">
+      <option value="">-- Seleccione --</option>
+      {% for m in materiales %}
+        <option value="{{ m.id }}" {% if pieza and pieza.material_id == m.id %}selected{% endif %}>{{ m.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Vida útil (horas)</label>
+    <input type="number" name="vida_horas" class="form-control" value="{{ pieza.vida_horas if pieza else '' }}">
+  </div>
+  <div class="mb-3">
+    <label>URL de imagen</label>
+    <input type="text" name="imagen_url" class="form-control" value="{{ pieza.imagen_url if pieza else '' }}">
+  </div>
+  <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+{% endblock %}
+
