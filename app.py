@@ -1,38 +1,23 @@
-import os
+# app.py
 from flask import Flask, render_template
+from models import db
+from routes import register_blueprints
 from dotenv import load_dotenv
-from models import db  # importa db desde models/__init__.py
-
-# Importar blueprints
-from routes.dashboard_routes import dashboard_bp
-from routes.auth_routes import auth_bp
-from routes.repuestos_routes import repuestos_bp
-from routes.contacto_routes import contacto_bp
-from routes.monitor_routes import monitor_bp
-from routes.stock_routes import stock_bp
-
-# Cargar variables de entorno
-load_dotenv()
-
+import os
 
 def create_app():
+    load_dotenv()  # carga variables del archivo .env
+    
     app = Flask(__name__)
+    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "fallback_key")
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Configuración desde .env
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev_secret")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Inicializar SQLAlchemy
+    # Inicializar base de datos
     db.init_app(app)
 
-    # Registrar blueprints
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(dashboard_bp)
-    app.register_blueprint(repuestos_bp)
-    app.register_blueprint(contacto_bp)
-    app.register_blueprint(monitor_bp)
-    app.register_blueprint(stock_bp, url_prefix="/stock")
+    # Registrar las rutas
+    register_blueprints(app)
 
     @app.route("/")
     def index():
@@ -40,8 +25,6 @@ def create_app():
 
     return app
 
-
 if __name__ == "__main__":
     app = create_app()
-    # Debug activado mientras desarrollás
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True)
