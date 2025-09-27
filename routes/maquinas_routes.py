@@ -56,3 +56,49 @@ def eliminar(id):
     supabase.table("maquinas").delete().eq("id", id).execute()
     flash("Máquina eliminada", "info")
     return redirect(url_for("maquinas.index"))
+
+from flask import send_file
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
+from datetime import datetime
+
+
+@maquinas_bp.route("/pdf_reporte")
+def pdf_reporte():
+    # Traer datos desde Supabase
+    try:
+        response = supabase.table("maquinas").select("*").execute()
+        maquinas = response.data
+    except Exception as e:
+        maquinas = []
+
+    # Crear PDF en memoria
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+
+    # Título del reporte
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(200, 750, "Reporte de Máquinas")
+
+    # Fecha y hora actual
+    p.setFont("Helvetica", 10)
+    fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    p.drawString(50, 730, f"Generado el: {fecha_hora}")
+
+    # Verificar si hay datos
+    y = 700
+    if not maquinas:
+        p.drawString(50, y, "⚠ No hay datos de máquinas para mostrar.")
+    else:
+        for m in maquinas:
+            p.drawString(50, y, f"ID: {m['id']} | Nombre: {m['nombre']} | Desc: {m['descripcion']}")
+            y -= 20
+            if y < 50:  # salto de página si se llena
+                p.showPage()
+                y = 750
+
+    p.save()
+    buffer.seek(0)
+
+    return send_file(buffer, as_attachment=True, download_name="reporte_maquinas.pdf", mimetype="application/pdf")

@@ -56,3 +56,51 @@ def eliminar(id):
     supabase.table("piezas").delete().eq("id", id).execute()
     flash("Pieza eliminada", "info")
     return redirect(url_for("piezas.index"))
+
+from flask import send_file
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from datetime import datetime
+
+@piezas_bp.route("/pdf_reporte")
+def pdf_reporte():
+    # Traer datos desde Supabase
+    try:
+        response = supabase.table("piezas").select("*").execute()
+        piezas = response.data
+    except Exception as e:
+        piezas = []
+
+    # Crear PDF en memoria
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+
+    # Título del reporte
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(200, 750, "Reporte de Piezas")
+
+    # Fecha y hora actual
+    p.setFont("Helvetica", 10)
+    fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    p.drawString(50, 730, f"Generado el: {fecha_hora}")
+
+    # Verificar si hay datos
+    y = 700
+    if not piezas:
+        p.drawString(50, y, "⚠ No hay datos de piezas para mostrar.")
+    else:
+        for pz in piezas:
+            p.drawString(
+                50, y,
+                f"ID: {pz['id']} | Nombre: {pz['nombre']} | Vida útil: {pz.get('vida_util', 'N/A')} días"
+            )
+            y -= 20
+            if y < 50:  # salto de página si se llena
+                p.showPage()
+                y = 750
+
+    p.save()
+    buffer.seek(0)
+
+    return send_file(buffer, as_attachment=True, download_name="reporte_piezas.pdf", mimetype="application/pdf")

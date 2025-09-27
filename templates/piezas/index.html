@@ -2,6 +2,11 @@
 {% block content %}
 <h3>Piezas</h3>
 <a href="{{ url_for('piezas.crear') }}" class="btn btn-success mb-3">➕ Nueva Pieza</a>
+<div class="mb-3">
+    <a href="{{ url_for('piezas.pdf_reporte') }}" class="btn btn-success">
+        Imprimir estado actual (PDF)
+    </a>
+</div>
 <table class="table table-bordered">
   <thead>
     <tr>
