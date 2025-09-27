@@ -9,6 +9,19 @@ def init_app(app):
         print("Database tables created.")
         db.session.commit()
     return db
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
+
+# Importar los modelos para que SQLAlchemy los registre
+from .area import Area
+from .fabricante import Fabricante
+from .maquina import Maquina
+from .material import Material
+from .pieza import Pieza
+from .pieza_instalada import PiezaInstalada
+from .proveedor import Proveedor
+from .stock import Stock
 
 # Add any additional models here
 # For example:
