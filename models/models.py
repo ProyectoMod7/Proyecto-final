@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+'''
 class Sector(db.Model):
     __tablename__ = 'sectors'
     id = db.Column(db.Integer, primary_key=True)
@@ -139,3 +140,4 @@ def init_db(app):
 # Always test your models and database interactions thoroughly.
 # End of models/models.py
 # models/models.py
+'''
