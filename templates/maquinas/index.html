@@ -1,23 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-  <h2>Máquinas</h2>
-  <table class="table">
-    <thead>
-      <tr><th>ID</th><th>Nombre</th><th>Marca</th><th>Modelo</th></tr>
-    </thead>
-    <tbody>
-      {% for m in maquinas %}
-      <tr>
-        <td>{{ m.id }}</td>
-        <td><a href="{{ url_for('maquinas.ver_maquina', id=m.id) }}">{{ m.nombre }}</a></td>
-        <td>{{ m.marca or '-' }}</td>
-        <td>{{ m.modelo or '-' }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4">No hay máquinas cargadas.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<h2>Máquinas</h2>
+<a href="{{ url_for('maquinas.new') }}" class="btn btn-primary">Nueva Máquina</a>
+<table class="table">
+  <tr>
+    <th>ID</th><th>Nombre</th><th>Acciones</th>
+  </tr>
+  {% for m in maquinas %}
+  <tr>
+    <td>{{ m.id }}</td>
+    <td>{{ m.nombre }}</td>
+    <td>
+      <a href="{{ url_for('maquinas.edit', id=m.id) }}" class="btn btn-sm btn-warning">Editar</a>
+      <a href="{{ url_for('maquinas.delete', id=m.id) }}" class="btn btn-sm btn-danger">Eliminar</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
 {% endblock %}
