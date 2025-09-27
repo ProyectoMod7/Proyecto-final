@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Máquinas</h2>
+  <table class="table">
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Marca</th><th>Modelo</th></tr>
+    </thead>
+    <tbody>
+      {% for m in maquinas %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td><a href="{{ url_for('maquinas.ver_maquina', id=m.id) }}">{{ m.nombre }}</a></td>
+        <td>{{ m.marca or '-' }}</td>
+        <td>{{ m.modelo or '-' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No hay máquinas cargadas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

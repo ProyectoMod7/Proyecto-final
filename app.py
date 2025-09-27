@@ -7,6 +7,7 @@ from routes.repuestos_routes import repuestos_bp
 from routes.contacto_routes import contacto_bp
 from routes.monitor_routes import monitor_bp
 from routes.stock_routes import stock_bp
+from routes.maquinas_routes import maquinas_bp
 import os
 from dotenv import load_dotenv
 
@@ -32,6 +33,7 @@ def create_app():
     app.register_blueprint(repuestos_bp)
     app.register_blueprint(contacto_bp)
     app.register_blueprint(monitor_bp)
+    app.register_blueprint(maquinas_bp)
     app.register_blueprint(stock_bp, url_prefix="/stock")
 
     # Ruta principal

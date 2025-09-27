@@ -1,17 +1,23 @@
-class Maquina:
-    def __init__(self, id, nombre, ubicacion):
-        self.id = id
-        self.nombre = nombre
-        self.ubicacion = ubicacion
-        self.piezas = []
+# models/maquina.py
+from models.models import db
 
-    def agregar_pieza(self, pieza):
-        self.piezas.append(pieza)
+class Maquina(db.Model):
+    __tablename__ = "maquinas"
 
-    def estado_general(self):
-        estados = [pieza.estado() for pieza in self.piezas]
-        if "rojo" in estados:
-            return "rojo"
-        elif "amarillo" in estados:
-            return "amarillo"
-        return "verde"
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(50), unique=True)
+    nombre = db.Column(db.String(200), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey("areas.id"), nullable=True)
+    marca = db.Column(db.String(100))
+    modelo = db.Column(db.String(100))
+    nro_serie = db.Column(db.String(100), nullable=True)
+
+    piezas_instaladas = db.relationship(
+        "PiezaInstalada",
+        back_populates="maquina",
+        lazy=True,
+        cascade="all,delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<Maquina {self.nombre}>"
