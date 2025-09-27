@@ -1,5 +1,3 @@
-# models/pieza.py
-from models.models import db
 from . import db
 
 class Pieza(db.Model):
@@ -7,15 +5,12 @@ class Pieza(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(120), nullable=False)
-    # descripcion = db.Column(db.Text, nullable=True)
-    # codigo = db.Column(db.String(50), unique=True, nullable=False)
     imagen_url = db.Column(db.String(255), nullable=True)
-    
+
     # Relaciones
     stock_items = db.relationship("Stock", back_populates="pieza", lazy=True)
     piezas_instaladas = db.relationship("PiezaInstalada", back_populates="pieza", lazy=True)
 
-    
     fabricante_id = db.Column(db.Integer, db.ForeignKey("fabricantes.id"))
     proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"))
     material_id = db.Column(db.Integer, db.ForeignKey("materiales.id"))
@@ -26,3 +21,4 @@ class Pieza(db.Model):
 
     def __repr__(self):
         return f"<Pieza {self.nombre}>"
+
