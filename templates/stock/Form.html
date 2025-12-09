@@ -15,6 +15,12 @@
             <label class="form-label">Cantidad</label>
             <input type="number" name="cantidad" class="form-control" required value="{{ item.cantidad if item else 0 }}">
         </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Stock mínimo</label>
+            <input type="number" name="stock_minimo" class="form-control" min="0"
+           value="{{ item.stock_minimo if item else 0 }}">
+        </div>
 
         <div class="mb-3">
             <label class="form-label">Pieza asociada</label>

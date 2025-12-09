@@ -22,7 +22,7 @@ def crear():
         data = {
             "pieza_id": request.form.get("pieza_id"),
             "cantidad": request.form.get("cantidad"),
-            "minimo": request.form.get("minimo"),
+            "stock_minimo": request.form.get("stock_minimo"),
             "ubicacion": request.form.get("ubicacion")
         }
         supabase.table("stock").insert(data).execute()
@@ -37,7 +37,7 @@ def editar(id):
         data = {
             "pieza_id": request.form.get("pieza_id"),
             "cantidad": request.form.get("cantidad"),
-            "minimo": request.form.get("minimo"),
+            "stock_minimo": request.form.get("stock_minimo"),
             "ubicacion": request.form.get("ubicacion")
         }
         supabase.table("stock").update(data).eq("id", id).execute()
