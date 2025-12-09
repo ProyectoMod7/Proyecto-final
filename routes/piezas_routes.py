@@ -12,19 +12,19 @@ def index():
     for pz in piezas:
         # Fabricante
         fabricante_id = pz.get("fabricante_id")
-            if fabricante_id:
-                fab_res = supabase.table("fabricantes").select("nombre").eq("id", fabricante_id).single().execute()
-                nombre_fabricante = fab_res.data.get("nombre") if fab_res and fab_res.data else "Desconocido"
-            else:
-                nombre_fabricante = "Sin fabricante"
+        if fabricante_id:
+            fab_res = supabase.table("fabricantes").select("nombre").eq("id", fabricante_id).single().execute()
+            nombre_fabricante = fab_res.data.get("nombre") if fab_res and fab_res.data else "Desconocido"
+        else:
+            nombre_fabricante = "Sin fabricante"
 
         # Material
         material_id = pz.get("material_id")
-            if material_id:
-                mat_res = supabase.table("materiales").select("nombre").eq("id", material_id).single().execute()
-                nombre_material = mat_res.data.get("nombre") if mat_res and mat_res.data else "Desconocido"
-            else:
-                nombre_material = "Sin material"
+        if material_id:
+            mat_res = supabase.table("materiales").select("nombre").eq("id", material_id).single().execute()
+            nombre_material = mat_res.data.get("nombre") if mat_res and mat_res.data else "Desconocido"
+        else:
+            nombre_material = "Sin material"
 
         pz["fabricante"] = nombre_fabricante
         pz["material"] = nombre_material
