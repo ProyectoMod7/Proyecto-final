@@ -5,6 +5,11 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Listado de Máquinas</h3>
+            <div>
+        <a href="{{ url_for('maquinas.generar_pdf') }}" class="btn btn-outline-secondary me-2">
+            🖨️ Imprimir PDF
+        </a>
+
         <a href="{{ url_for('maquinas.crear') }}" class="btn btn-primary">+ Nueva Máquina</a>
     </div>
 
