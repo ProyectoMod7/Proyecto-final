@@ -45,7 +45,7 @@ def index():
             })
 
         # Estado general de la máquina
-        estado = calcular_estado_maquina(lista_piezas)
+        estado = calcular_estado_maquina(piezas)
 
 
         # Agregar info de piezas al diccionario de la máquina
