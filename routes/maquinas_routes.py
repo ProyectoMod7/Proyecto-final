@@ -1,9 +1,19 @@
 # routes/maquinas_routes.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from supabase_client import supabase
 
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
+from supabase_client import supabase
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
+from datetime import datetime
+
+# Declaración correcta del Blueprint (una sola vez)
 maquinas_bp = Blueprint("maquinas", __name__, url_prefix="/maquinas")
 
+
+# ===========================
+# LISTAR MÁQUINAS
+# ===========================
 @maquinas_bp.route("/", methods=["GET"])
 def index():
     res = supabase.table("maquinas").select("*").order("id", desc=False).execute()
@@ -19,7 +29,7 @@ def index():
     for p in piezas:
         piezas_por_maquina.setdefault(p["maquina_id"], []).append(p)
 
-    # Agregar estado a cada máquina
+    # Agregar estado
     maquinas_con_estado = []
     for m in maquinas:
         lista_piezas = []
@@ -32,7 +42,9 @@ def index():
     return render_template("maquinas/index.html", maquinas=maquinas_con_estado)
 
 
-@maquinas_bp.route("/crear", methods=["GET","POST"])
+# ===========================
+# CREAR
+# ===========================
 @maquinas_bp.route("/crear", methods=["GET","POST"])
 def crear():
     if request.method == "POST":
@@ -54,11 +66,14 @@ def crear():
 
         flash("Máquina creada", "success")
         return redirect(url_for("maquinas.index"))
-    # GET -> formulario
-    # opcional: cargar areas para select
+
     areas = (supabase.table("areas").select("*").order("nombre").execute().data) or []
     return render_template("maquinas/form.html", maquina=None, areas=areas)
 
+
+# ===========================
+# EDITAR
+# ===========================
 @maquinas_bp.route("/editar/<int:id>", methods=["GET","POST"])
 def editar(id):
     if request.method == "POST":
@@ -80,7 +95,7 @@ def editar(id):
 
         flash("Máquina actualizada", "success")
         return redirect(url_for("maquinas.index"))
-    # GET -> obtener datos existentes
+
     r = supabase.table("maquinas").select("*").eq("id", id).single().execute()
     maquina = r.data
 
@@ -91,59 +106,57 @@ def editar(id):
     areas = (supabase.table("areas").select("*").order("nombre").execute().data) or []
     return render_template("maquinas/form.html", maquina=maquina, areas=areas)
 
+
+# ===========================
+# ELIMINAR
+# ===========================
 @maquinas_bp.route("/eliminar/<int:id>", methods=["POST"])
 def eliminar(id):
     supabase.table("maquinas").delete().eq("id", id).execute()
     flash("Máquina eliminada", "info")
     return redirect(url_for("maquinas.index"))
 
-from flask import send_file
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import io
-from datetime import datetime
 
-
+# ===========================
+# GENERAR PDF
+# ===========================
 @maquinas_bp.route("/pdf_reporte")
 def pdf_reporte():
-    # Traer datos desde Supabase
+
     try:
         response = supabase.table("maquinas").select("*").execute()
         maquinas = response.data
-    except Exception as e:
+    except Exception:
         maquinas = []
 
-    # Crear PDF en memoria
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
 
-    # Título del reporte
     p.setFont("Helvetica-Bold", 16)
     p.drawString(200, 750, "Reporte de Máquinas")
 
-    # Fecha y hora actual
     p.setFont("Helvetica", 10)
     fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     p.drawString(50, 730, f"Generado el: {fecha_hora}")
 
-    # Verificar si hay datos
     y = 700
     p.setFont("Helvetica", 10)
+
     if not maquinas:
         p.drawString(50, y, "ATENCIÓN: No hay datos de máquinas para mostrar.")
     else:
         for m in maquinas:
             descripcion = (m.get("descripcion") or "").replace("\n", " ")
-            linea = f"ID: {m.get('id', '')} | Nombre: {m.get('nombre', '')} | Desc: {descripcion}"
-            # Truncar línea para evitar desbordes
-            max_len = 120
-            if len(linea) > max_len:
-                linea = linea[: max_len - 3] + "..."
+            linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Desc: {descripcion}"
+
+            if len(linea) > 120:
+                linea = linea[:117] + "..."
+
             p.drawString(50, y, linea)
             y -= 20
-            if y < 60:  # salto de página si se llena
+
+            if y < 60:
                 p.showPage()
-                # redraw header on new page
                 p.setFont("Helvetica-Bold", 16)
                 p.drawString(200, 750, "Reporte de Máquinas")
                 p.setFont("Helvetica", 10)
