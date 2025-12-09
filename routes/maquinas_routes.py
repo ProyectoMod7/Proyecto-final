@@ -14,33 +14,46 @@ maquinas_bp = Blueprint("maquinas", __name__, url_prefix="/maquinas")
 # ===========================
 # LISTAR MÁQUINAS
 # ===========================
-@maquinas_bp.route("/", methods=["GET"])
+from helpers.piezas_estado import calcular_estado_maquina, calcular_estado_pieza
+
+@maquinas_bp.route("/")
 def index():
-    res = supabase.table("maquinas").select("*").order("id", desc=False).execute()
-    maquinas = res.data or []
+    # Todas las máquinas
+    maquinas = supabase.table("maquinas").select("*").execute().data or []
 
-    # TRAER piezas instaladas para calcular estado
-    piezas = supabase.table("piezas_instaladas").select("*").execute().data or []
-
-    from helpers.piezas_estado import calcular_estado_pieza, calcular_estado_maquina
+    # Todas las piezas instaladas (para agrupar por máquina)
+    piezas_inst = supabase.table("piezas_instaladas").select("*").execute().data or []
 
     # Agrupar piezas por máquina
     piezas_por_maquina = {}
-    for p in piezas:
+    for p in piezas_inst:
         piezas_por_maquina.setdefault(p["maquina_id"], []).append(p)
 
-    # Agregar estado
-    maquinas_con_estado = []
+    maquinas_final = []
+
     for m in maquinas:
-        lista_piezas = []
-        for p in piezas_por_maquina.get(m["id"], []):
-            lista_piezas.append(calcular_estado_pieza(p))
+        piezas = piezas_por_maquina.get(m["id"], [])
 
-        m["estado"] = calcular_estado_maquina(lista_piezas) if lista_piezas else "green"
-        maquinas_con_estado.append(m)
+        piezas_info = []
+        for p in piezas:
+            estado = calcular_estado_pieza(p)
+            piezas_info.append({
+                "dias_restantes": estado["dias_restantes"],
+                "estado_color": estado["estado_color"],
+                "estado_texto": estado["estado_texto"],
+                "rota": p.get("rota", False)
+            })
 
-    return render_template("maquinas/index.html", maquinas=maquinas_con_estado)
+        # Estado general de la máquina
+        estado_maquina = calcular_estado_maquina(piezas_info)
 
+        # Agregar al diccionario final
+        m["estado_color"] = estado_maquina["estado_color"]
+        m["estado_texto"] = estado_maquina["estado_texto"]
+
+        maquinas_final.append(m)
+
+    return render_template("maquinas/index.html", maquinas=maquinas_final)
 
 # ===========================
 # CREAR
