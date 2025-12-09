@@ -15,6 +15,10 @@
       <label>Modelo</label>
       <input type="text" name="modelo" class="form-control" value="{{ maquina.modelo if maquina else '' }}">
     </div>
+    <div class="mb-3">
+    <label class="form-label">Descripción</label>
+    <textarea name="descripcion" class="form-control">{{ maquina.descripcion if maquina else '' }}</textarea>
+    </div>
     <button class="btn btn-primary" type="submit">Guardar</button>
   </form>
 </div>
