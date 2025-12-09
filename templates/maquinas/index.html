@@ -1,79 +1,81 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0">Máquinas</h1>
+  <div>
+    <a href="{{ url_for('monitor.new_machine') }}" class="btn btn-primary me-2">➕ Nueva máquina</a>
+    <a href="{{ url_for('monitor.dashboard') }}" class="btn btn-secondary">Volver</a>
+  </div>
+</div>
 
-<div class="container mt-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Listado de Máquinas</h3>
-            <div>
-        <a href="{{ url_for('maquinas.pdf_reporte') }}" class="btn btn-outline-secondary me-2">
-            🖨️ Imprimir PDF
-        </a>
-        <a href="{{ url_for('maquinas.crear') }}" class="btn btn-primary">+ Nueva Máquina</a>
-    </div>
-
-    <table class="table table-striped align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Nombre</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
-            </tr>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Monitorea / Piezas</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
-
         <tbody>
-            {% for m in maquinas %}
-            <tr>
-                <td>{{ m.nombre }}</td>
-                <td>{{ m.marca or "—" }}</td>
-                <td>{{ m.modelo or "—" }}</td>
+        {% for machine in machines %}
+          {# Obtener estado con fallback #}
+          {% set status = (machine.get('status') if machine.get('status') else (machine.get('estado') if machine.get('estado') else 'Sin datos')) %}
+          {# Badge según estado #}
+          {% if status == 'Activo' %}
+            {% set badge = 'success' %}
+          {% elif status == 'Inactivo' %}
+            {% set badge = 'secondary' %}
+          {% elif status == 'Mantenimiento' %}
+            {% set badge = 'warning' %}
+          {% else %}
+            {% set badge = 'dark' %}
+          {% endif %}
 
-                <!-- Estado visual -->
-                <td>
-                    {% set est = m.estado_color %}
+          {# Obtener piezas asociadas si vienen en el objeto (keys 'pieces' o 'piezas') #}
+          {% set piezas = machine.get('pieces') if machine.get('pieces') is not none else (machine.get('piezas') if machine.get('piezas') is not none else []) %}
 
-                    {% if est == 'green' %}
-                        <span class="badge bg-success p-2">Óptima</span>
+          <tr>
+            <td>{{ machine.get('id') }}</td>
+            <td>{{ machine.get('name') or machine.get('nombre') or 'Sin nombre' }}</td>
+            <td><span class="badge bg-{{ badge }}">{{ status }}</span></td>
+            <td>
+              {% if piezas|length > 0 %}
+                <ul class="mb-0">
+                  {% for p in piezas %}
+                    <li>
+                      {{ p.get('nombre') or p.get('name') or 'pieza sin nombre' }}
+                      {% if p.get('estado') %}
+                        <span class="badge bg-info text-dark ms-2">{{ p.get('estado') }}</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <span class="text-muted">Sin piezas</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('monitor.edit_machine', machine_id=machine.get('id')) }}" class="btn btn-sm btn-warning">Editar</a>
 
-                    {% elif est == 'yellow' %}
-                        <span class="badge bg-warning text-dark p-2">Advertencia</span>
+              <form action="{{ url_for('monitor.delete_machine', machine_id=machine.get('id')) }}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+              </form>
 
-                    {% elif est == 'red' %}
-                        <span class="badge bg-danger p-2">Crítica</span>
-
-                    {% elif est == 'black' %}
-                        <span class="badge bg-dark p-2">Rota</span>
-
-                    {% else %}
-                        <span class="badge bg-secondary p-2">Sin datos</span>
-                    {% endif %}
-                </td>
-
-                <td class="text-center">
-                    <a class="btn btn-sm btn-info"
-                       href="{{ url_for('piezas_instaladas.listar_por_maquina', maquina_id=m.id) }}">
-                       Ver piezas
-                    </a>
-
-                    <a class="btn btn-sm btn-warning"
-                       href="{{ url_for('maquinas.editar', id=m.id) }}">
-                       Editar
-                    </a>
-
-                    <form action="{{ url_for('maquinas.eliminar', id=m.id) }}"
-                          method="POST" style="display:inline-block;"
-                          onsubmit="return confirm('¿Eliminar máquina?');">
-                        <button class="btn btn-sm btn-danger">Eliminar</button>
-                    </form>
-                </td>
-
-            </tr>
-            {% endfor %}
+              <a href="{{ url_for('piezas.index', machine_id=machine.get('id')) }}" class="btn btn-sm btn-info ms-1">
+                Piezas <span class="badge bg-light text-dark ms-1">{{ piezas|length }}</span>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
         </tbody>
-    </table>
-
+      </table>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
