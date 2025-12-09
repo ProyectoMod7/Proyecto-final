@@ -50,17 +50,39 @@ def calcular_estado_pieza(p):
 
 def calcular_estado_maquina(lista_piezas):
     """
-    Devuelve estado general de la máquina según sus piezas.
-    Prioridad:
-    negro > rojo > amarillo > verde
+    Devuelve un diccionario con:
+    - estado_texto
+    - estado_color
     """
 
-    colores = [p["estado_color"] for p in lista_piezas]
+    if not lista_piezas:
+        return {
+            "estado_texto": "Sin piezas",
+            "estado_color": "gray"
+        }
 
+    colores = [p.get("estado_color") for p in lista_piezas]
+
+    # PRIORIDAD: black > red > yellow > green
     if "black" in colores:
-        return "black"
+        return {
+            "estado_texto": "Pieza rota",
+            "estado_color": "black"
+        }
+
     if "red" in colores:
-        return "red"
+        return {
+            "estado_texto": "Vencida",
+            "estado_color": "red"
+        }
+
     if "yellow" in colores:
-        return "yellow"
-    return "green"
+        return {
+            "estado_texto": "Advertencia",
+            "estado_color": "yellow"
+        }
+
+    return {
+        "estado_texto": "Óptima",
+        "estado_color": "green"
+    }

@@ -45,12 +45,14 @@ def index():
             })
 
         # Estado general de la máquina
-        estado_maquina = calcular_estado_maquina(piezas_info)
+        estado = calcular_estado_maquina(lista_piezas)
 
-        # Agregar al diccionario final
-        m["estado_color"] = estado_maquina["estado_color"]
-        m["estado_texto"] = estado_maquina["estado_texto"]
 
+        # Agregar info de piezas al diccionario de la máquina
+        m["estado"] = estado["estado_texto"]
+        m["estado_color"] = estado["estado_color"]
+        m["piezas"] = piezas_info
+        
         maquinas_final.append(m)
 
     return render_template("maquinas/index.html", maquinas=maquinas_final)
