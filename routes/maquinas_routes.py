@@ -36,23 +36,31 @@ def index():
 
         piezas_info = []
         for p in piezas:
-            estado = calcular_estado_pieza(p)
+            estado_p = calcular_estado_pieza(p)
             piezas_info.append({
-                "dias_restantes": estado["dias_restantes"],
-                "estado_color": estado["estado_color"],
-                "estado_texto": estado["estado_texto"],
+                "dias_restantes": estado_p.get["dias_restantes"],
+                "estado_color": estado_p.get["estado_color"],
+                "estado_texto": estado_p.get["estado_texto"],
                 "rota": p.get("rota", False)
             })
 
         # Estado general de la máquina
-        estado = calcular_estado_maquina(piezas)
+        estado = calcular_estado_maquina(piezas_info)
 
+        # Por seguridad: si la función devolviera un string por accidente, lo normalizamos
+        if isinstance(estado, dict):
+            estado_texto = estado.get("estado_texto", "Sin datos")
+            estado_color = estado.get("estado_color", "gray")
+        else:
+            # fallback seguro
+            estado_texto = str(estado)
+            estado_color = "gray"
 
         # Agregar info de piezas al diccionario de la máquina
-        m["estado"] = estado["estado_texto"]
-        m["estado_color"] = estado["estado_color"]
+        m["estado"] = estado_texto
+        m["estado_color"] = estado_color
         m["piezas"] = piezas_info
-        
+
         maquinas_final.append(m)
 
     return render_template("maquinas/index.html", maquinas=maquinas_final)
