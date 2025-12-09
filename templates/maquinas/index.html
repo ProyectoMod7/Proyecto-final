@@ -1,63 +1,75 @@
 {% extends "base.html" %}
-
 {% block content %}
+
 <div class="container mt-4">
-    <h2>Gestión de Máquinas</h2>
 
-    <!-- Formulario para crear -->
-    <form action="{{ url_for('maquinas.crear') }}" method="post" class="mb-4">
-        <div class="row g-2">
-            <div class="col-md-4">
-                <input type="text" name="nombre" class="form-control" placeholder="Nombre de la máquina" required>
-            </div>
-            <div class="col-md-6">
-                <input type="text" name="descripcion" class="form-control" placeholder="Descripción">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Agregar</button>
-            </div>
-        </div>
-    </form>
-
-    <!-- Botón de reporte PDF -->
-    <div class="mb-3">
-        <a href="{{ url_for('maquinas.pdf_reporte') }}" class="btn btn-success">
-            📄 Generar reporte (Estado actual)
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Listado de Máquinas</h3>
+        <a href="{{ url_for('maquinas.crear') }}" class="btn btn-primary">+ Nueva Máquina</a>
     </div>
 
-    <!-- Listado de máquinas -->
-    <table class="table table-striped">
-        <thead>
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
             <tr>
-                <th>ID</th>
                 <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Acciones</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
             </tr>
         </thead>
+
         <tbody>
             {% for m in maquinas %}
             <tr>
-                <td>{{ m.id }}</td>
                 <td>{{ m.nombre }}</td>
-                <td>{{ m.descripcion }}</td>
-                <td>
-                    <!-- Botón editar -->
-                    <form action="{{ url_for('maquinas.editar', id=m.id) }}" method="post" class="d-inline">
-                        <input type="text" name="nombre" value="{{ m.nombre }}" class="form-control mb-1">
-                        <input type="text" name="descripcion" value="{{ m.descripcion }}" class="form-control mb-1">
-                        <button type="submit" class="btn btn-warning btn-sm">Editar</button>
-                    </form>
+                <td>{{ m.marca or "—" }}</td>
+                <td>{{ m.modelo or "—" }}</td>
 
-                    <!-- Botón eliminar -->
-                    <form action="{{ url_for('maquinas.eliminar', id=m.id) }}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                <!-- Estado visual -->
+                <td>
+                    {% set est = m.estado_color %}
+
+                    {% if est == 'green' %}
+                        <span class="badge bg-success p-2">Óptima</span>
+
+                    {% elif est == 'yellow' %}
+                        <span class="badge bg-warning text-dark p-2">Advertencia</span>
+
+                    {% elif est == 'red' %}
+                        <span class="badge bg-danger p-2">Crítica</span>
+
+                    {% elif est == 'black' %}
+                        <span class="badge bg-dark p-2">Rota</span>
+
+                    {% else %}
+                        <span class="badge bg-secondary p-2">Sin datos</span>
+                    {% endif %}
+                </td>
+
+                <td class="text-center">
+                    <a class="btn btn-sm btn-info"
+                       href="{{ url_for('piezas_instaladas.listar_por_maquina', maquina_id=m.id) }}">
+                       Ver piezas
+                    </a>
+
+                    <a class="btn btn-sm btn-warning"
+                       href="{{ url_for('maquinas.editar', id=m.id) }}">
+                       Editar
+                    </a>
+
+                    <form action="{{ url_for('maquinas.eliminar', id=m.id) }}"
+                          method="POST" style="display:inline-block;"
+                          onsubmit="return confirm('¿Eliminar máquina?');">
+                        <button class="btn btn-sm btn-danger">Eliminar</button>
                     </form>
                 </td>
+
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
 </div>
+
 {% endblock %}

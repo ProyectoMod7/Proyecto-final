@@ -1,29 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h3>{{ 'Editar Máquina' if maquina else 'Nueva Máquina' }}</h3>
-  {% if maquina %}
-  <form method="post" action="{{ url_for('maquinas.edit', id=maquina.id) }}">
-  {% else %}
-  <form method="post" action="{{ url_for('maquinas.crear') }}">
-  {% endif %}
-    <div class="mb-3">
-      <label>Nombre</label>
-      <input type="text" name="nombre" class="form-control" value="{{ maquina.nombre if maquina else '' }}" required>
-    </div>
-    <div class="mb-3">
-      <label>Marca</label>
-      <input type="text" name="marca" class="form-control" value="{{ maquina.marca if maquina else '' }}">
-    </div>
-    <div class="mb-3">
-      <label>Modelo</label>
-      <input type="text" name="modelo" class="form-control" value="{{ maquina.modelo if maquina else '' }}">
-    </div>
-    <div class="mb-3">
-    <label class="form-label">Descripción</label>
-    <textarea name="descripcion" class="form-control">{{ maquina.descripcion if maquina else '' }}</textarea>
-    </div>
-    <button class="btn btn-primary" type="submit">Guardar</button>
-  </form>
+
+<div class="container mt-4">
+
+    <h3>
+        {% if maquina %} Editar Máquina {% else %} Nueva Máquina {% endif %}
+    </h3>
+
+    <form method="POST">
+
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" name="nombre"
+                   value="{{ maquina.nombre if maquina else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Marca</label>
+            <input type="text" class="form-control" name="marca"
+                   value="{{ maquina.marca if maquina else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Modelo</label>
+            <input type="text" class="form-control" name="modelo"
+                   value="{{ maquina.modelo if maquina else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">N° Serie</label>
+            <input type="text" class="form-control" name="nro_serie"
+                   value="{{ maquina.nro_serie if maquina else '' }}">
+        </div>
+
+        <button class="btn btn-primary" type="submit">Guardar</button>
+
+        <a href="{{ url_for('maquinas.index') }}" class="btn btn-secondary ms-2">
+            Cancelar
+        </a>
+    </form>
+
 </div>
+
 {% endblock %}
