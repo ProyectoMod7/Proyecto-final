@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ item.id if item else "Agregar ítem al stock" }}</h2>
+
+    <form action="{{ url_for('stock.crear') }}" method="post">
+        
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="nombre" class="form-control" required value="{{ item.nombre if item else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Cantidad</label>
+            <input type="number" name="cantidad" class="form-control" required value="{{ item.cantidad if item else 0 }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Pieza asociada</label>
+            <select name="pieza_id" class="form-select">
+                <option value="">(Sin pieza asociada)</option>
+                {% for p in piezas %}
+                    <option value="{{ p.id }}">
+                        {{ p.nombre }} ({{ p.id }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a href="{{ url_for('stock.index') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
