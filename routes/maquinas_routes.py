@@ -38,10 +38,10 @@ def index():
         for p in piezas:
             estado_p = calcular_estado_pieza(p)
             piezas_info.append({
-                "dias_restantes": estado_p.get["dias_restantes"],
-                "estado_color": estado_p.get["estado_color"],
-                "estado_texto": estado_p.get["estado_texto"],
-                "rota": p.get("rota", False)
+            "dias_restantes": estado_p.get("dias_restantes"),
+            "estado_color": estado_p.get("estado_color"),
+            "estado_texto": estado_p.get("estado_texto"),
+            "rota": p.get("rota", False)
             })
 
         # Estado general de la máquina
