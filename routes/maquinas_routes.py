@@ -8,7 +8,29 @@ maquinas_bp = Blueprint("maquinas", __name__, url_prefix="/maquinas")
 def index():
     res = supabase.table("maquinas").select("*").order("id", desc=False).execute()
     maquinas = res.data or []
-    return render_template("maquinas/index.html", maquinas=maquinas)
+
+    # TRAER piezas instaladas para calcular estado
+    piezas = supabase.table("piezas_instaladas").select("*").execute().data or []
+
+    from helpers.piezas_estado import calcular_estado_pieza, calcular_estado_maquina
+
+    # Agrupar piezas por máquina
+    piezas_por_maquina = {}
+    for p in piezas:
+        piezas_por_maquina.setdefault(p["maquina_id"], []).append(p)
+
+    # Agregar estado a cada máquina
+    maquinas_con_estado = []
+    for m in maquinas:
+        lista_piezas = []
+        for p in piezas_por_maquina.get(m["id"], []):
+            lista_piezas.append(calcular_estado_pieza(p))
+
+        m["estado"] = calcular_estado_maquina(lista_piezas) if lista_piezas else "green"
+        maquinas_con_estado.append(m)
+
+    return render_template("maquinas/index.html", maquinas=maquinas_con_estado)
+
 
 @maquinas_bp.route("/crear", methods=["GET","POST"])
 @maquinas_bp.route("/crear", methods=["GET","POST"])

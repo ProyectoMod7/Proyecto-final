@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3>
+        {% if pieza %} Editar Pieza Instalada {% else %} Instalar Pieza {% endif %}
+    </h3>
+
+    <form method="POST">
+
+        <!-- Selección de pieza (solo al crear) -->
+        {% if not pieza %}
+        <div class="mb-3">
+            <label class="form-label">Seleccionar pieza</label>
+            <select class="form-select" name="pieza_id" required>
+                <option value="">-- Elegir pieza --</option>
+                {% for p in piezas %}
+                    <option value="{{ p.id }}">{{ p.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Fecha de instalación</label>
+            <input type="date" class="form-control"
+                   name="fecha_instalacion"
+                   value="{{ pieza.fecha_instalacion[:10] if pieza else '' }}"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Vida útil (días)</label>
+            <input type="number" class="form-control"
+                   name="vida_dias"
+                   value="{{ pieza.vida_dias if pieza else '' }}"
+                   required>
+        </div>
+
+        <!-- Solo en edición -->
+        {% if pieza %}
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox"
+                   id="rota" name="rota" {% if pieza.rota %}checked{% endif %}>
+            <label class="form-check-label" for="rota">Pieza rota</label>
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea class="form-control" name="notas" rows="3">{{ pieza.notas if pieza else '' }}</textarea>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Guardar</button>
+
+        <a href="{{ url_for('piezas_instaladas.listar_por_maquina', maquina_id=maquina_id) }}"
+           class="btn btn-secondary ms-2">
+            Cancelar
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

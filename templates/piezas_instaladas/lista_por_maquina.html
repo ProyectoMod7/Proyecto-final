@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- Encabezado -->
+    <h3>
+        Piezas de la Máquina:
+        <span class="text-primary">{{ maquina.nombre }}</span>
+    </h3>
+
+    <p class="text-muted">
+        Marca: {{ maquina.marca or "—" }} |
+        Modelo: {{ maquina.modelo or "—" }} |
+        N° Serie: {{ maquina.nro_serie or "—" }}
+    </p>
+
+    <!-- Estado general -->
+    <div class="my-3">
+        <h5>Estado General:</h5>
+
+        {% if estado_maquina == 'green' %}
+            <span class="badge bg-success p-2">OPTIMA</span>
+
+        {% elif estado_maquina == 'yellow' %}
+            <span class="badge bg-warning text-dark p-2">ADVERTENCIA</span>
+
+        {% elif estado_maquina == 'red' %}
+            <span class="badge bg-danger p-2">CRÍTICA</span>
+
+        {% elif estado_maquina == 'black' %}
+            <span class="badge bg-dark p-2">ROTA</span>
+
+        {% else %}
+            <span class="badge bg-secondary p-2">SIN DATOS</span>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <!-- Botón agregar -->
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{{ url_for('piezas_instaladas.crear', maquina_id=maquina.id) }}"
+           class="btn btn-primary">
+            + Instalar pieza
+        </a>
+    </div>
+
+    <!-- Tabla -->
+    <table class="table table-bordered table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Pieza</th>
+                <th>Instalada</th>
+                <th>Vida útil (días)</th>
+                <th>Días restantes</th>
+                <th>Estado</th>
+                <th>Notas</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for p in piezas %}
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td>{{ p.fecha_instalacion[:10] if p.fecha_instalacion }}</td>
+                    <td>{{ p.vida_dias }}</td>
+
+                    <td>
+                        {% if p.dias_restantes != None %}
+                            {{ p.dias_restantes }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <!-- Color del estado -->
+                    <td>
+                        {% if p.estado_color == 'green' %}
+                            <span class="badge bg-success">OK</span>
+
+                        {% elif p.estado_color == 'yellow' %}
+                            <span class="badge bg-warning text-dark">Advertencia</span>
+
+                        {% elif p.estado_color == 'red' %}
+                            <span class="badge bg-danger">Vencida</span>
+
+                        {% elif p.estado_color == 'black' %}
+                            <span class="badge bg-dark">Rota</span>
+
+                        {% else %}
+                            <span class="badge bg-secondary">Sin datos</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ p.notas or "—" }}</td>
+
+                    <td class="text-center">
+                        <a href="{{ url_for('piezas_instaladas.editar', id=p.id) }}"
+                           class="btn btn-sm btn-warning">
+                           Editar
+                        </a>
+
+                        <form action="{{ url_for('piezas_instaladas.eliminar', id=p.id) }}"
+                              method="POST" style="display:inline-block;"
+                              onsubmit="return confirm('¿Eliminar pieza instalada?');">
+                            <button class="btn btn-sm btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

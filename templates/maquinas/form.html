@@ -2,7 +2,11 @@
 {% block content %}
 <div class="container">
   <h3>{{ 'Editar Máquina' if maquina else 'Nueva Máquina' }}</h3>
-  <form method="post" action="{{ url_for('maquinas.edit' if maquina else 'maquinas.crear', id=(maquina.id if maquina else '') ) }}">
+  {% if maquina %}
+  <form method="post" action="{{ url_for('maquinas.edit', id=maquina.id) }}">
+  {% else %}
+  <form method="post" action="{{ url_for('maquinas.crear') }}">
+  {% endif %}
     <div class="mb-3">
       <label>Nombre</label>
       <input type="text" name="nombre" class="form-control" value="{{ maquina.nombre if maquina else '' }}" required>
