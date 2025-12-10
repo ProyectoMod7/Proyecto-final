@@ -1,90 +1,66 @@
 # routes/stock_routes.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response
+from flask import Blueprint, render_template, send_file
 from supabase_client import supabase
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import io
 from datetime import datetime
-
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/stock")
 
 @stock_bp.route("/")
-def index():
-    res = supabase.table("stock").select("*").order("id", desc=False).execute()
-    items = res.data or []
-    for it in items:
-        p = supabase.table("piezas").select("nombre").eq("id", it.get("pieza_id")).single().execute()
-        it["pieza_nombre"] = p.data.get("nombre") if p and p.data else "N/A"
-    return render_template("stock/index.html", items=items)
+def ver_stock():
+    # Traer todas las piezas NO instaladas
+    data = supabase.table("piezas").select("*").eq("instalada", False).execute()
+    piezas = data.data if data.data else []
 
-@stock_bp.route("/crear", methods=["GET", "POST"])
-def crear():
-    if request.method == "POST":
-        cantidad = int(request.form.get("cantidad") or 0)
-        if cantidad < 0:
-            flash("La cantidad no puede ser negativa", "danger")
-            return redirect(url_for("stock.crear"))
-        data = {
-            "pieza_id": request.form.get("pieza_id"),
-            "cantidad": request.form.get("cantidad"),
-            "stock_minimo": request.form.get("stock_minimo"),
-            "ubicacion": request.form.get("ubicacion"),
-            "ultima_actualizacion": datetime.utcnow().isoformat()
-        }
-        supabase.table("stock").insert(data).execute()
-        flash("Item de stock creado", "success")
-        return redirect(url_for("stock.index"))
-    piezas = supabase.table("piezas").select("*").order("nombre").execute().data or []
-    return render_template("stock/form.html", item=None, piezas=piezas)
+    # Calcular si falta completar stock mínimo
+    for p in piezas:
+        try:
+            p["stock_bajo"] = p["cantidad_actual"] < p["stock_minimo"]
+        except:
+            p["stock_bajo"] = False
 
-@stock_bp.route("/editar/<int:id>", methods=["GET", "POST"])
-def editar(id):
-    if request.method == "POST":
-        cantidad = int(request.form.get("cantidad") or 0)
-        if cantidad < 0:
-            flash("La cantidad no puede ser negativa", "danger")
-            return redirect(url_for("stock.crear"))
-        data = {
-            "pieza_id": request.form.get("pieza_id"),
-            "cantidad": request.form.get("cantidad"),
-            "stock_minimo": request.form.get("stock_minimo"),
-            "ubicacion": request.form.get("ubicacion"),
-            "ultima_actualizacion": datetime.utcnow().isoformat()
-        }
-        supabase.table("stock").update(data).eq("id", id).execute()
-        flash("Item actualizado", "success")
-        return redirect(url_for("stock.index"))
-    item = supabase.table("stock").select("*").eq("id", id).single().execute().data
-    piezas = supabase.table("piezas").select("*").order("nombre").execute().data or []
-    return render_template("stock/form.html", item=item, piezas=piezas)
+    return render_template("stock/stock.html", piezas=piezas)
 
-@stock_bp.route("/eliminar/<int:id>", methods=["POST"])
-def eliminar(id):
-    supabase.table("stock").delete().eq("id", id).execute()
-    flash("Item eliminado", "info")
-    return redirect(url_for("stock.index"))
 
-@stock_bp.route("/pdf")
-def pdf_stock():
-    res = supabase.table("stock").select("*").order("id", desc=False).execute()
-    items = res.data or []
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter  # Ensure letter is imported correctly
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(40, height-40, "Reporte de Stock")
-    y = height - 70
-    p.setFont("Helvetica", 10)
-    for it in items:
-        pieza = supabase.table("piezas").select("nombre").eq("id", it.get("pieza_id")).single().execute()
-        pieza_nombre = pieza.data.get("nombre") if pieza and pieza.data else "N/A"
-        p.drawString(40, y, f"{pieza_nombre} | Cant: {it.get('cantidad')} | Min: {it.get('stock_minimo')} | Ubicación: {it.get('ubicacion')}")
-        y -= 15
-        if y < 60:
-            p.showPage()
-            y = height - 40
-    p.save()
-    pdf = buffer.getvalue()
-    buffer.close()
-    return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition":"attachment; filename=stock.pdf"})
+@stock_bp.route("/imprimir")
+def imprimir_stock():
+    data = supabase.table("piezas").select("*").eq("instalada", False).execute()
+    piezas = data.data if data.data else []
+
+    filename = "/mnt/data/stock_report.pdf"
+    doc = SimpleDocTemplate(filename, pagesize=letter)
+
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title = Paragraph("Reporte de Stock (Piezas no instaladas)", styles["Title"])
+    elements.append(title)
+
+    table_data = [["Nombre", "Cantidad", "Stock Mínimo", "Estado"]]
+
+    for p in piezas:
+        estado = "OK"
+        if p["cantidad_actual"] < p["stock_minimo"]:
+            estado = "STOCK BAJO"
+
+        table_data.append([
+            p.get("nombre", "Sin nombre"),
+            p.get("cantidad_actual", 0),
+            p.get("stock_minimo", 0),
+            estado
+        ])
+
+    table = Table(table_data)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+        ("ALIGN", (1, 1), (-1, -1), "CENTER")
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return send_file(filename, as_attachment=True)
