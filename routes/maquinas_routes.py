@@ -204,11 +204,67 @@ def eliminar(id):
 @maquinas_bp.route("/pdf_reporte")
 def pdf_reporte():
     try:
-        response = supabase.table("maquinas").select("*").execute()
-        maquinas = response.data
+        # Traer todas las máquinas
+        response = supabase.table("maquinas").select("*").order("id").execute()
+        maquinas = response.data or []
+
+        # Traer todas las piezas instaladas
+        piezas_inst = supabase.table("piezas_instaladas").select("*").execute().data or []
+
+        # Agrupar piezas instaladas por máquina
+        piezas_por_maquina = {}
+        for inst in piezas_inst:
+            piezas_por_maquina.setdefault(inst["maquina_id"], []).append(inst)
+
+        # Recorremos máquinas para calcular estado dinámico
+        for m in maquinas:
+            lista_inst = piezas_por_maquina.get(m["id"], [])
+            piezas_info = []
+
+            for inst in lista_inst:
+                # Obtener datos de la pieza
+                pieza = supabase.table("piezas").select("nombre, vida_dias").eq("id", inst.get("pieza_id")).single().execute().data or {}
+                nombre_pieza = pieza.get("nombre", "Pieza desconocida")
+                vida_dias = inst.get("vida_dias") or pieza.get("vida_dias") or 0
+
+                # Calcular días restantes y estado
+                dias_restantes = None
+                estado_texto = "Sin datos"
+                fecha_cad = inst.get("fecha_caducidad")
+                try:
+                    if fecha_cad:
+                        fc = datetime.fromisoformat(fecha_cad).date() if isinstance(fecha_cad, str) else fecha_cad.date()
+                        dias_restantes = (fc - date.today()).days
+                        if dias_restantes < 0:
+                            estado_texto = "Vencida"
+                        elif dias_restantes <= 15:
+                            estado_texto = "Crítica"
+                        elif dias_restantes <= 30:
+                            estado_texto = "Advertencia"
+                        else:
+                            estado_texto = "Óptima"
+                except:
+                    pass
+
+                piezas_info.append({"estado_texto": estado_texto})
+
+            # Estado general de la máquina según las piezas
+            colores = [p.get("estado_texto") for p in piezas_info]
+            if "Vencida" in colores:
+                m["estado"] = "Pieza vencida/rota"
+            elif "Crítica" in colores:
+                m["estado"] = "Crítica"
+            elif "Advertencia" in colores:
+                m["estado"] = "Advertencia"
+            elif "Óptima" in colores and colores:
+                m["estado"] = "Óptima"
+            else:
+                m["estado"] = "Sin piezas"
+
     except Exception:
         maquinas = []
 
+    # Crear PDF
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     p.setFont("Helvetica-Bold", 16)
@@ -225,7 +281,7 @@ def pdf_reporte():
     else:
         for m in maquinas:
             descripcion = (m.get("descripcion") or "").replace("\n", " ")
-            linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Estado: {m.get('estado', 'Sin datos')} | Desc: {descripcion}"
+            linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Estado: {m.get('estado','Sin datos')} | Desc: {descripcion}"
             if len(linea) > 120:
                 linea = linea[:117] + "..."
             p.drawString(50, y, linea)
