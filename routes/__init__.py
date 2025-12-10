@@ -14,7 +14,7 @@ def register_blueprints(app):
     app.register_blueprint(maquinas_bp)
     app.register_blueprint(piezas_bp)
     app.register_blueprint(stock_bp)
-    app.register_blueprint(contacto_bp, url_prefix="/contacto")
+    app.register_blueprint(contacto_bp)
     app.register_blueprint(piezas_instaladas_bp)  # 👈 LO REGISTRAMOS
 
     # app.register_blueprint(fabricantes_bp)

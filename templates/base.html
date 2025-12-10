@@ -30,7 +30,7 @@
                       <a class="nav-link {% if request.path.startswith('/stock') %}active{% endif %}" href="{{ url_for('stock.index') }}">Stock</a>
                     </li>
                     <li class="nav-item">
-                      <a class="nav-link {% if request.path.startswith('/contacto') %}active{% endif %}" href="{{ url_for('contacto.contacto') }}">Contacto</a>
+                      <a class="nav-link {% if request.path.startswith('/contacto') %}active{% endif %}" href="{{ url_for('contacto.index') }}">Contacto</a>
                     </li>
                   {% endif %}
                 </ul>

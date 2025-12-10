@@ -1,12 +1,16 @@
 # routes/contacto_routes.py
+
 from flask import Blueprint, render_template, request, redirect, url_for
 
-contacto_bp = Blueprint("contacto", __name__)
+# Creamos el blueprint
+contacto_bp = Blueprint("contacto", __name__, url_prefix="/contacto")
 
-@contacto_bp.route("/contacto")
-def contacto():
+# Ruta principal para mostrar los datos
+@contacto_bp.route("/")
+def index():
     return render_template("contacto/index.html")
 
+"""
 @contacto_bp.route('/enviar', methods=['POST'])
 def enviar():
     nombre = request.form.get('nombre')
@@ -14,3 +18,4 @@ def enviar():
     mensaje = request.form.get('mensaje')
     # Aquí irá la lógica para guardar o enviar el mensaje
     return redirect(url_for('contacto.index'))
+"""
