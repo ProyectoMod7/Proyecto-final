@@ -17,90 +17,60 @@ maquinas_bp = Blueprint("maquinas", __name__, url_prefix="/maquinas")
 # ===========================
 @maquinas_bp.route("/")
 def index():
-    # Traer máquinas
+    # Traer todas las máquinas
     maquinas = supabase.table("maquinas").select("*").order("id", desc=False).execute().data or []
 
     # Traer todas las piezas_instaladas
     piezas_inst = supabase.table("piezas_instaladas").select("*").execute().data or []
 
-    # Mapear piezas_instaladas por maquina
+    # Traer piezas disponibles (vista stock)
+    stock_data = supabase.table("stock").select("*").execute().data or []
+    
+    # Agrupar piezas instaladas por máquina
     piezas_por_maquina = {}
     for inst in piezas_inst:
         piezas_por_maquina.setdefault(inst["maquina_id"], []).append(inst)
 
-    # Traer stock (view)
-    stock = supabase.table("stock").select("*").order("nombre", desc=False).execute().data or []
-
     maquinas_final = []
     for m in maquinas:
         lista_inst = piezas_por_maquina.get(m["id"], [])
-
         piezas_info = []
+        
         for inst in lista_inst:
-            # Obtener datos de la pieza (nombre, vida_dias) desde tabla piezas
+            # Obtener datos de la pieza
             pieza = supabase.table("piezas").select("nombre, vida_dias").eq("id", inst.get("pieza_id")).single().execute().data or {}
             nombre_pieza = pieza.get("nombre", "Pieza desconocida")
             vida_dias = inst.get("vida_dias") or pieza.get("vida_dias") or 0
 
-            # calcular dias_restantes desde fecha_caducidad (si existe) o desde fecha_instalacion+vida
+            # Calcular estado de la pieza
             dias_restantes = None
             estado_color = "secondary"
             estado_texto = "Sin datos"
             fecha_cad = inst.get("fecha_caducidad")
+            
             try:
                 if fecha_cad:
-                    # fecha_cad puede venir como 'YYYY-MM-DD' string
-                    if isinstance(fecha_cad, str):
-                        fc = datetime.fromisoformat(fecha_cad).date()
-                    elif isinstance(fecha_cad, datetime):
-                        fc = fecha_cad.date()
-                    else:
-                        fc = fecha_cad
+                    fc = datetime.fromisoformat(fecha_cad).date() if isinstance(fecha_cad, str) else fecha_cad.date() if isinstance(fecha_cad, datetime) else fecha_cad
+                    hoy = date.today()
+                    dias_restantes = (fc - hoy).days
+                elif inst.get("fecha_instalacion") and vida_dias:
+                    fi = datetime.fromisoformat(inst["fecha_instalacion"]).date() if isinstance(inst["fecha_instalacion"], str) else inst["fecha_instalacion"].date() if isinstance(inst["fecha_instalacion"], datetime) else inst["fecha_instalacion"]
+                    fc = fi + timedelta(days=int(vida_dias))
                     hoy = date.today()
                     dias_restantes = (fc - hoy).days
 
-                    # Reglas simples:
+                # Reglas de estado
+                if dias_restantes is not None:
                     if dias_restantes < 0:
-                        estado_color = "dark"  # rota / vencida
-                        estado_texto = "Vencida"
+                        estado_color, estado_texto = "dark", "Vencida"
                     elif dias_restantes <= 15:
-                        estado_color = "danger"
-                        estado_texto = "Crítica"
+                        estado_color, estado_texto = "danger", "Crítica"
                     elif dias_restantes <= 30:
-                        estado_color = "warning"
-                        estado_texto = "Advertencia"
+                        estado_color, estado_texto = "warning", "Advertencia"
                     else:
-                        estado_color = "success"
-                        estado_texto = "Óptima"
-                else:
-                    # si no hay fecha_caducidad, se intenta calcular desde fecha_instalacion
-                    fecha_inst = inst.get("fecha_instalacion")
-                    if fecha_inst and vida_dias:
-                        if isinstance(fecha_inst, str):
-                            fi = datetime.fromisoformat(fecha_inst).date()
-                        elif isinstance(fecha_inst, datetime):
-                            fi = fecha_inst.date()
-                        else:
-                            fi = fecha_inst
-                        fc = fi + timedelta(days=int(vida_dias))
-                        hoy = date.today()
-                        dias_restantes = (fc - hoy).days
-                        if dias_restantes < 0:
-                            estado_color = "dark"
-                            estado_texto = "Vencida"
-                        elif dias_restantes <= 15:
-                            estado_color = "danger"
-                            estado_texto = "Crítica"
-                        elif dias_restantes <= 30:
-                            estado_color = "warning"
-                            estado_texto = "Advertencia"
-                        else:
-                            estado_color = "success"
-                            estado_texto = "Óptima"
+                        estado_color, estado_texto = "success", "Óptima"
             except Exception:
-                dias_restantes = None
-                estado_color = "secondary"
-                estado_texto = "Sin datos"
+                pass
 
             piezas_info.append({
                 "pieza_id": inst.get("pieza_id"),
@@ -115,31 +85,27 @@ def index():
                 "notas": inst.get("notas", "")
             })
 
-        # calcular estado general de la maquina: prioridad dark > danger > warning > success
+        # Calcular estado general de la máquina
         colores = [p.get("estado_color") for p in piezas_info]
         if "dark" in colores:
-            estado_texto = "Pieza vencida/rota"
-            estado_color = "dark"
+            estado_texto, estado_color = "Pieza vencida/rota", "dark"
         elif "danger" in colores:
-            estado_texto = "Crítica"
-            estado_color = "danger"
+            estado_texto, estado_color = "Crítica", "danger"
         elif "warning" in colores:
-            estado_texto = "Advertencia"
-            estado_color = "warning"
+            estado_texto, estado_color = "Advertencia", "warning"
         elif "success" in colores and colores:
-            estado_texto = "Óptima"
-            estado_color = "success"
+            estado_texto, estado_color = "Óptima", "success"
         else:
-            estado_texto = "Sin piezas"
-            estado_color = "secondary"
+            estado_texto, estado_color = "Sin piezas", "secondary"
 
         m["estado"] = estado_texto
         m["estado_color"] = estado_color
         m["piezas"] = piezas_info
+        m["stock_disponible"] = stock_data
 
         maquinas_final.append(m)
 
-    return render_template("maquinas/index.html", maquinas=maquinas_final, stock=stock)
+    return render_template("maquinas/index.html", maquinas=maquinas_final)
 
 
 # ==========================================================
@@ -176,7 +142,7 @@ def instalar():
 # CREAR - EDITAR - ELIMINAR - PDF (sin areas)
 # ==========================================================
 @maquinas_bp.route("/crear", methods=["GET","POST"])
-def crear_maquina():
+def crear():
     if request.method == "POST":
         nombre = request.form.get("nombre")
         marca = request.form.get("marca")
@@ -259,7 +225,7 @@ def pdf_reporte():
     else:
         for m in maquinas:
             descripcion = (m.get("descripcion") or "").replace("\n", " ")
-            linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Desc: {descripcion}"
+            linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Estado: {m.get('estado', 'Sin datos')} | Desc: {descripcion}"
             if len(linea) > 120:
                 linea = linea[:117] + "..."
             p.drawString(50, y, linea)
