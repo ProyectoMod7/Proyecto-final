@@ -68,14 +68,66 @@
                                 <button class="btn btn-sm btn-danger">Eliminar</button>
                             </form>
 
-                            <a href="{{ url_for('piezas.index', machine_id=m.id) }}"
-                               class="btn btn-sm btn-info ms-1">
+                            <!-- Botón que abre el modal de stock para esta máquina -->
+                            <button class="btn btn-sm btn-info ms-1" data-bs-toggle="modal"
+                                    data-bs-target="#modalStock{{ m.id }}">
                                 Piezas <span class="badge bg-light text-dark ms-1">
                                     {{ m.piezas|length }}
                                 </span>
-                            </a>
+                            </button>
                         </td>
                     </tr>
+
+                    <!-- Modal específico por máquina -->
+                    <div class="modal fade" id="modalStock{{ m.id }}" tabindex="-1" aria-hidden="true">
+                      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Seleccionar pieza para: {{ m.nombre }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                          </div>
+                          <div class="modal-body">
+                            {% if stock and stock|length > 0 %}
+                              <div class="table-responsive">
+                                <table class="table table-sm">
+                                  <thead>
+                                    <tr>
+                                      <th>Nombre</th>
+                                      <th>SKU</th>
+                                      <th>Vida (días)</th>
+                                      <th>Acción</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for p in stock %}
+                                    <tr>
+                                      <td>{{ p.nombre }}</td>
+                                      <td>{{ p.sku or '' }}</td>
+                                      <td>{{ p.vida_dias or '' }}</td>
+                                      <td>
+                                        <form method="POST" action="{{ url_for('maquinas.instalar') }}">
+                                          <input type="hidden" name="maquina_id" value="{{ m.id }}">
+                                          <input type="hidden" name="pieza_id" value="{{ p.id }}">
+                                          <input type="hidden" name="vida_dias" value="{{ p.vida_dias or 0 }}">
+                                          <button class="btn btn-sm btn-success">Instalar</button>
+                                        </form>
+                                      </td>
+                                    </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                              </div>
+                            {% else %}
+                              <p class="text-muted">No hay piezas en stock para asignar.</p>
+                            {% endif %}
+                          </div>
+
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                 {% endfor %}
                 </tbody>
 

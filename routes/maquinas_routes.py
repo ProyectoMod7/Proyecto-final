@@ -5,77 +5,183 @@ from supabase_client import supabase
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
-# Declaración correcta del Blueprint (una sola vez)
 maquinas_bp = Blueprint("maquinas", __name__, url_prefix="/maquinas")
 
+# NOTA: no uso helpers aquí para evitar incompatibilidades de firma.
+# Haré el cálculo de estado localmente con reglas simples.
 
 # ===========================
-# LISTAR MÁQUINAS
+# LISTAR MÁQUINAS (INDEX)
 # ===========================
-from helpers.piezas_estado import calcular_estado_maquina, calcular_estado_pieza
-
 @maquinas_bp.route("/")
 def index():
-    # Todas las máquinas
-    maquinas = supabase.table("maquinas").select("*").execute().data or []
+    # Traer máquinas
+    maquinas = supabase.table("maquinas").select("*").order("id", desc=False).execute().data or []
 
-    # Todas las piezas instaladas (para agrupar por máquina)
+    # Traer todas las piezas_instaladas
     piezas_inst = supabase.table("piezas_instaladas").select("*").execute().data or []
 
-    # Agrupar piezas por máquina
+    # Mapear piezas_instaladas por maquina
     piezas_por_maquina = {}
-    for p in piezas_inst:
-        piezas_por_maquina.setdefault(p["maquina_id"], []).append(p)
+    for inst in piezas_inst:
+        piezas_por_maquina.setdefault(inst["maquina_id"], []).append(inst)
+
+    # Traer stock (view)
+    stock = supabase.table("stock").select("*").order("nombre", desc=False).execute().data or []
 
     maquinas_final = []
-
     for m in maquinas:
-        piezas = piezas_por_maquina.get(m["id"], [])
+        lista_inst = piezas_por_maquina.get(m["id"], [])
 
         piezas_info = []
-        for p in piezas:
-            estado_p = calcular_estado_pieza(p)
+        for inst in lista_inst:
+            # Obtener datos de la pieza (nombre, vida_dias) desde tabla piezas
+            pieza = supabase.table("piezas").select("nombre, vida_dias").eq("id", inst.get("pieza_id")).single().execute().data or {}
+            nombre_pieza = pieza.get("nombre", "Pieza desconocida")
+            vida_dias = inst.get("vida_dias") or pieza.get("vida_dias") or 0
+
+            # calcular dias_restantes desde fecha_caducidad (si existe) o desde fecha_instalacion+vida
+            dias_restantes = None
+            estado_color = "secondary"
+            estado_texto = "Sin datos"
+            fecha_cad = inst.get("fecha_caducidad")
+            try:
+                if fecha_cad:
+                    # fecha_cad puede venir como 'YYYY-MM-DD' string
+                    if isinstance(fecha_cad, str):
+                        fc = datetime.fromisoformat(fecha_cad).date()
+                    elif isinstance(fecha_cad, datetime):
+                        fc = fecha_cad.date()
+                    else:
+                        fc = fecha_cad
+                    hoy = date.today()
+                    dias_restantes = (fc - hoy).days
+
+                    # Reglas simples:
+                    if dias_restantes < 0:
+                        estado_color = "dark"  # rota / vencida
+                        estado_texto = "Vencida"
+                    elif dias_restantes <= 15:
+                        estado_color = "danger"
+                        estado_texto = "Crítica"
+                    elif dias_restantes <= 30:
+                        estado_color = "warning"
+                        estado_texto = "Advertencia"
+                    else:
+                        estado_color = "success"
+                        estado_texto = "Óptima"
+                else:
+                    # si no hay fecha_caducidad, se intenta calcular desde fecha_instalacion
+                    fecha_inst = inst.get("fecha_instalacion")
+                    if fecha_inst and vida_dias:
+                        if isinstance(fecha_inst, str):
+                            fi = datetime.fromisoformat(fecha_inst).date()
+                        elif isinstance(fecha_inst, datetime):
+                            fi = fecha_inst.date()
+                        else:
+                            fi = fecha_inst
+                        fc = fi + timedelta(days=int(vida_dias))
+                        hoy = date.today()
+                        dias_restantes = (fc - hoy).days
+                        if dias_restantes < 0:
+                            estado_color = "dark"
+                            estado_texto = "Vencida"
+                        elif dias_restantes <= 15:
+                            estado_color = "danger"
+                            estado_texto = "Crítica"
+                        elif dias_restantes <= 30:
+                            estado_color = "warning"
+                            estado_texto = "Advertencia"
+                        else:
+                            estado_color = "success"
+                            estado_texto = "Óptima"
+            except Exception:
+                dias_restantes = None
+                estado_color = "secondary"
+                estado_texto = "Sin datos"
+
             piezas_info.append({
-            "dias_restantes": estado_p.get("dias_restantes"),
-            "estado_color": estado_p.get("estado_color"),
-            "estado_texto": estado_p.get("estado_texto"),
-            "rota": p.get("rota", False)
+                "pieza_id": inst.get("pieza_id"),
+                "nombre": nombre_pieza,
+                "fecha_instalacion": inst.get("fecha_instalacion"),
+                "vida_dias": vida_dias,
+                "fecha_caducidad": inst.get("fecha_caducidad"),
+                "dias_restantes": dias_restantes,
+                "estado_color": estado_color,
+                "estado_texto": estado_texto,
+                "rota": inst.get("rota", False),
+                "notas": inst.get("notas", "")
             })
 
-        # Estado general de la máquina
-        estado = calcular_estado_maquina(piezas_info)
-
-        # Por seguridad: si la función devolviera un string por accidente, lo normalizamos
-        if isinstance(estado, dict):
-            estado_texto = estado.get("estado_texto", "Sin datos")
-            estado_color = estado.get("estado_color", "gray")
+        # calcular estado general de la maquina: prioridad dark > danger > warning > success
+        colores = [p.get("estado_color") for p in piezas_info]
+        if "dark" in colores:
+            estado_texto = "Pieza vencida/rota"
+            estado_color = "dark"
+        elif "danger" in colores:
+            estado_texto = "Crítica"
+            estado_color = "danger"
+        elif "warning" in colores:
+            estado_texto = "Advertencia"
+            estado_color = "warning"
+        elif "success" in colores and colores:
+            estado_texto = "Óptima"
+            estado_color = "success"
         else:
-            # fallback seguro
-            estado_texto = str(estado)
-            estado_color = "gray"
+            estado_texto = "Sin piezas"
+            estado_color = "secondary"
 
-        # Agregar info de piezas al diccionario de la máquina
         m["estado"] = estado_texto
         m["estado_color"] = estado_color
         m["piezas"] = piezas_info
 
         maquinas_final.append(m)
 
-    return render_template("maquinas/index.html", maquinas=maquinas_final)
+    return render_template("maquinas/index.html", maquinas=maquinas_final, stock=stock)
 
-# ===========================
-# CREAR
-# ===========================
+
+# ==========================================================
+# INSTALAR PIEZA (POST desde modal en index)
+# ==========================================================
+@maquinas_bp.route("/instalar", methods=["POST"])
+def instalar():
+    try:
+        maquina_id = int(request.form.get("maquina_id"))
+        pieza_id = int(request.form.get("pieza_id"))
+        vida_dias = int(request.form.get("vida_dias") or 0)
+    except Exception:
+        flash("Datos inválidos para instalar pieza", "danger")
+        return redirect(url_for("maquinas.index"))
+
+    fecha_inst = date.today()
+    fecha_cad = fecha_inst + timedelta(days=vida_dias)
+
+    supabase.table("piezas_instaladas").insert({
+        "maquina_id": maquina_id,
+        "pieza_id": pieza_id,
+        "fecha_instalacion": fecha_inst.isoformat(),
+        "vida_dias": vida_dias,
+        "fecha_caducidad": fecha_cad.isoformat(),
+        "rota": False,
+        "notas": ""
+    }).execute()
+
+    flash("Pieza instalada correctamente", "success")
+    return redirect(url_for("maquinas.index"))
+
+
+# ==========================================================
+# CREAR - EDITAR - ELIMINAR - PDF (sin areas)
+# ==========================================================
 @maquinas_bp.route("/crear", methods=["GET","POST"])
-def crear():
+def crear_maquina():
     if request.method == "POST":
         nombre = request.form.get("nombre")
         marca = request.form.get("marca")
         modelo = request.form.get("modelo")
         nro_serie = request.form.get("nro_serie")
-        area_id = request.form.get("area_id") or None
         descripcion = request.form.get("descripcion") or ""
 
         supabase.table("maquinas").insert({
@@ -83,20 +189,15 @@ def crear():
             "marca": marca,
             "modelo": modelo,
             "nro_serie": nro_serie,
-            "area_id": area_id,
             "descripcion": descripcion
         }).execute()
 
         flash("Máquina creada", "success")
         return redirect(url_for("maquinas.index"))
 
-    areas = (supabase.table("areas").select("*").order("nombre").execute().data) or []
-    return render_template("maquinas/form.html", maquina=None, areas=areas)
+    return render_template("maquinas/form.html", maquina=None)
 
 
-# ===========================
-# EDITAR
-# ===========================
 @maquinas_bp.route("/editar/<int:id>", methods=["GET","POST"])
 def editar(id):
     if request.method == "POST":
@@ -104,7 +205,6 @@ def editar(id):
         marca = request.form.get("marca")
         modelo = request.form.get("modelo")
         nro_serie = request.form.get("nro_serie")
-        area_id = request.form.get("area_id") or None
         descripcion = request.form.get("descripcion") or ""
 
         supabase.table("maquinas").update({
@@ -112,27 +212,19 @@ def editar(id):
             "marca": marca,
             "modelo": modelo,
             "nro_serie": nro_serie,
-            "area_id": area_id,
             "descripcion": descripcion
         }).eq("id", id).execute()
 
         flash("Máquina actualizada", "success")
         return redirect(url_for("maquinas.index"))
 
-    r = supabase.table("maquinas").select("*").eq("id", id).single().execute()
-    maquina = r.data
-
+    maquina = supabase.table("maquinas").select("*").eq("id", id).single().execute().data
     if not maquina:
         flash("Máquina no encontrada", "warning")
         return redirect(url_for("maquinas.index"))
-
-    areas = (supabase.table("areas").select("*").order("nombre").execute().data) or []
-    return render_template("maquinas/form.html", maquina=maquina, areas=areas)
+    return render_template("maquinas/form.html", maquina=maquina)
 
 
-# ===========================
-# ELIMINAR
-# ===========================
 @maquinas_bp.route("/eliminar/<int:id>", methods=["POST"])
 def eliminar(id):
     supabase.table("maquinas").delete().eq("id", id).execute()
@@ -140,12 +232,11 @@ def eliminar(id):
     return redirect(url_for("maquinas.index"))
 
 
-# ===========================
-# GENERAR PDF
-# ===========================
+# ==========================================================
+# PDF
+# ==========================================================
 @maquinas_bp.route("/pdf_reporte")
 def pdf_reporte():
-
     try:
         response = supabase.table("maquinas").select("*").execute()
         maquinas = response.data
@@ -154,10 +245,8 @@ def pdf_reporte():
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
-
     p.setFont("Helvetica-Bold", 16)
     p.drawString(200, 750, "Reporte de Máquinas")
-
     p.setFont("Helvetica", 10)
     fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     p.drawString(50, 730, f"Generado el: {fecha_hora}")
@@ -171,13 +260,10 @@ def pdf_reporte():
         for m in maquinas:
             descripcion = (m.get("descripcion") or "").replace("\n", " ")
             linea = f"ID: {m.get('id','')} | Nombre: {m.get('nombre','')} | Desc: {descripcion}"
-
             if len(linea) > 120:
                 linea = linea[:117] + "..."
-
             p.drawString(50, y, linea)
             y -= 20
-
             if y < 60:
                 p.showPage()
                 p.setFont("Helvetica-Bold", 16)
@@ -188,5 +274,4 @@ def pdf_reporte():
 
     p.save()
     buffer.seek(0)
-
     return send_file(buffer, as_attachment=True, download_name="reporte_maquinas.pdf", mimetype="application/pdf")
