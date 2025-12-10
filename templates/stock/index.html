@@ -10,8 +10,6 @@
         <thead class="table-dark">
             <tr>
                 <th>Nombre</th>
-                <th>Cantidad</th>
-                <th>Stock mínimo</th>
                 <th>Estado</th>
             </tr>
         </thead>
@@ -20,8 +18,6 @@
         {% for p in piezas %}
             <tr class="{% if p.stock_bajo %}table-danger{% endif %}">
                 <td>{{ p.nombre }}</td>
-                <td>{{ p.cantidad_actual }}</td>
-                <td>{{ p.stock_minimo }}</td>
                 <td>
                     {% if p.stock_bajo %}
                         <span class="badge bg-danger">Stock bajo</span>

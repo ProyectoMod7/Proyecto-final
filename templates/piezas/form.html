@@ -25,34 +25,6 @@
                    value="{{ pieza.nombre if pieza else '' }}">
         </div>
 
-        <!-- FABRICANTE -->
-        <div class="mb-3">
-            <label class="form-label">Fabricante</label>
-            <select name="fabricante_id" class="form-control">
-                <option value="">-- Seleccionar fabricante --</option>
-                {% for fab in fabricantes %}
-                    <option value="{{ fab.id }}"
-                        {% if pieza and pieza.fabricante_id == fab.id %}selected{% endif %}>
-                        {{ fab.nombre }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- MATERIAL -->
-        <div class="mb-3">
-            <label class="form-label">Material</label>
-            <select name="material_id" class="form-control">
-                <option value="">-- Seleccionar material --</option>
-                {% for mat in materiales %}
-                    <option value="{{ mat.id }}"
-                        {% if pieza and pieza.material_id == mat.id %}selected{% endif %}>
-                        {{ mat.nombre }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-
         <!-- VIDA EN DÍAS -->
         <div class="mb-3">
             <label class="form-label">Vida útil (días)</label>
@@ -60,14 +32,17 @@
                    value="{{ pieza.vida_dias if pieza and pieza.vida_dias else '' }}">
         </div>
 
-        <!-- FECHA DE INSTALACIÓN -->
+        <!-- UNIDAD -->
         <div class="mb-3">
-            <label class="form-label">Fecha de instalación</label>
-            <input type="date" name="fecha_instalacion" class="form-control"
-                   value="{{ pieza.fecha_instalacion if pieza and pieza.fecha_instalacion else '' }}">
-            <small class="text-muted">
-                Si se deja vacío, se tomará la fecha de hoy automáticamente.
-            </small>
+            <label class="form-label">Unidad</label>
+            <input type="text" name="unidad" class="form-control"
+                   value="{{ pieza.unidad if pieza else '' }}">
+        </div>
+
+        <!-- DESCRIPCIÓN -->
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea name="descripcion" class="form-control">{{ pieza.descripcion if pieza else '' }}</textarea>
         </div>
 
         <!-- IMAGEN URL -->

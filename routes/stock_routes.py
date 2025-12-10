@@ -1,10 +1,13 @@
 # routes/stock_routes.py
+
 from flask import Blueprint, render_template, send_file
 from supabase_client import supabase
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
+from datetime import datetime
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/stock")
 
@@ -21,50 +24,37 @@ def index():
     # --- 3) FILTRAR STOCK (piezas NO instaladas) ---
     stock = [p for p in piezas if p["id"] not in instaladas_ids]
 
-    # --- 4) CALCULAR STOCK BAJO ---
-    for p in stock:
-        cantidad = p.get("cantidad_actual", 0)
-        minimo = p.get("stock_minimo", 0)
-        p["stock_bajo"] = cantidad < minimo
-
     return render_template("stock/index.html", piezas=stock)
 
 
 @stock_bp.route("/imprimir")
 def imprimir_stock():
+    # --- Traer todas las piezas disponibles desde la vista stock ---
+    res = supabase.table("stock").select("*").order("nombre").execute()
+    stock = res.data if res.data else []
 
-    piezas_data = supabase.table("piezas").select("*").execute()
-    piezas = piezas_data.data if piezas_data.data else []
-
-    inst_data = supabase.table("piezas_instaladas").select("pieza_id").execute()
-    instaladas_ids = [i["pieza_id"] for i in inst_data.data] if inst_data.data else []
-
-    stock = [p for p in piezas if p["id"] not in instaladas_ids]
-
-    filename = "/mnt/data/stock_report.pdf"
-    doc = SimpleDocTemplate(filename, pagesize=letter)
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
 
     styles = getSampleStyleSheet()
     elements = []
 
-    title = Paragraph("Reporte de Stock (Piezas NO instaladas)", styles["Title"])
+    # Título con fecha
+    fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    title = Paragraph(f"Reporte de Stock (Piezas NO instaladas) - {fecha_hora}", styles["Title"])
     elements.append(title)
 
-    table_data = [["Nombre", "Cantidad", "Stock Mínimo", "Estado"]]
+    # Cabecera de tabla
+    table_data = [["Nombre", "Vida útil (días)"]]
 
+    # Filas con piezas
     for p in stock:
-        cantidad = p.get("cantidad_actual", 0)
-        minimo = p.get("stock_minimo", 0)
-        estado = "STOCK BAJO" if cantidad < minimo else "OK"
-
         table_data.append([
             p.get("nombre", "Sin nombre"),
-            cantidad,
-            minimo,
-            estado
+            p.get("vida_dias", 0)
         ])
 
-    table = Table(table_data)
+    table = Table(table_data, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
         ("GRID", (0, 0), (-1, -1), 1, colors.black),
@@ -74,4 +64,5 @@ def imprimir_stock():
     elements.append(table)
     doc.build(elements)
 
-    return send_file(filename, as_attachment=True)
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="stock_report.pdf", mimetype="application/pdf")

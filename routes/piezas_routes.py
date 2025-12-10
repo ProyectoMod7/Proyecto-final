@@ -1,3 +1,5 @@
+# routes/piezas_routes.py
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from supabase_client import supabase
 import io
@@ -15,25 +17,6 @@ def index():
     res = supabase.table("piezas").select("*").order("id", desc=False).execute()
     piezas = res.data or []
 
-    # Obtener nombres adicionales (fabricante / material)
-    for pz in piezas:
-
-        # Fabricante
-        if pz.get("fabricante_id"):
-            fab = supabase.table("fabricantes").select("nombre") \
-                  .eq("id", pz["fabricante_id"]).single().execute()
-            pz["fabricante"] = fab.data.get("nombre") if fab and fab.data else "Desconocido"
-        else:
-            pz["fabricante"] = "N/A"
-
-        # Material
-        if pz.get("material_id"):
-            mat = supabase.table("materiales").select("nombre") \
-                  .eq("id", pz["material_id"]).single().execute()
-            pz["material"] = mat.data.get("nombre") if mat and mat.data else "Desconocido"
-        else:
-            pz["material"] = "N/A"
-
     return render_template("piezas/index.html", piezas=piezas)
 
 
@@ -47,8 +30,6 @@ def crear():
             "nombre": request.form.get("nombre"),
             "sku": request.form.get("sku") or None,
             "descripcion": request.form.get("descripcion") or None,
-            "fabricante_id": request.form.get("fabricante_id") or None,
-            "material_id": request.form.get("material_id") or None,
             "vida_dias": int(request.form.get("vida_dias") or 0),
             "unidad": request.form.get("unidad") or None,
             "imagen_url": request.form.get("imagen_url") or None
@@ -58,13 +39,7 @@ def crear():
         flash("Pieza creada con éxito", "success")
         return redirect(url_for("piezas.index"))
 
-    fabricantes = supabase.table("fabricantes").select("*").order("nombre").execute().data or []
-    materiales = supabase.table("materiales").select("*").order("nombre").execute().data or []
-
-    return render_template("piezas/form.html",
-                           pieza=None,
-                           fabricantes=fabricantes,
-                           materiales=materiales)
+    return render_template("piezas/form.html", pieza=None)
 
 
 # =====================================================
@@ -77,8 +52,6 @@ def editar(id):
             "nombre": request.form.get("nombre"),
             "sku": request.form.get("sku") or None,
             "descripcion": request.form.get("descripcion") or None,
-            "fabricante_id": request.form.get("fabricante_id") or None,
-            "material_id": request.form.get("material_id") or None,
             "vida_dias": int(request.form.get("vida_dias") or 0),
             "unidad": request.form.get("unidad") or None,
             "imagen_url": request.form.get("imagen_url") or None
@@ -89,13 +62,11 @@ def editar(id):
         return redirect(url_for("piezas.index"))
 
     pieza = supabase.table("piezas").select("*").eq("id", id).single().execute().data
-    fabricantes = supabase.table("fabricantes").select("*").order("nombre").execute().data or []
-    materiales = supabase.table("materiales").select("*").order("nombre").execute().data or []
+    if not pieza:
+        flash("Pieza no encontrada", "warning")
+        return redirect(url_for("piezas.index"))
 
-    return render_template("piezas/form.html",
-                           pieza=pieza,
-                           fabricantes=fabricantes,
-                           materiales=materiales)
+    return render_template("piezas/form.html", pieza=pieza)
 
 
 # =====================================================
@@ -147,3 +118,4 @@ def pdf_reporte():
                      as_attachment=True,
                      download_name="piezas_catalogo.pdf",
                      mimetype="application/pdf")
+# ===================================================== ===
