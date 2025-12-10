@@ -3,6 +3,7 @@
 <h3>Stock</h3>
 <a href="{{ url_for('stock.crear') }}" class="btn btn-success mb-3">➕ Nuevo Item</a>
 <a href="{{ url_for('stock.pdf_stock') }}" class="btn btn-secondary mb-3">📄 Descargar PDF</a>
+
 <table class="table table-bordered">
   <thead>
     <tr>
@@ -12,16 +13,20 @@
   <tbody>
     {% for i in items %}
       <tr>
-        <td>{{ i.id }}</td>
-        <td>{{ i.pieza_nombre }}</td>
-        <td>{{ i.cantidad }}</td>
-        <td>{{ i.stock_minimo }}</td>
-        <td>{{ i.ubicacion }}</td>
+        <td>{{ i.get('id') }}</td>
+        <td>{{ i.get('pieza_nombre') or i.get('pieza') or i.get('nombre') }}</td>
+        <td>{{ i.get('cantidad') }}</td>
+        <td>{{ i.get('stock_minimo') or i.get('minimo') }}</td>
+        <td>{{ i.get('ubicacion') }}</td>
         <td>
-          <a href="{{ url_for('stock.editar', id=i.id) }}" class="btn btn-warning btn-sm">✏️</a>
-          <form method="post" action="{{ url_for('stock.eliminar', id=i.id) }}" style="display:inline;">
-            <button class="btn btn-danger btn-sm">🗑</button>
-          </form>
+          {% if i.get('id') %}
+            <a href="{{ url_for('stock.editar', id=i.get('id')) }}" class="btn btn-sm btn-warning">Editar</a>
+            <form method="post" action="{{ url_for('stock.eliminar', id=i.get('id')) }}" style="display:inline;">
+              <button class="btn btn-danger btn-sm">🗑</button>
+            </form>
+          {% else %}
+            <span class="text-muted">Sin ID</span>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}

@@ -4,6 +4,8 @@ from supabase_client import supabase
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
+from datetime import datetime
+
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/stock")
 
@@ -16,14 +18,19 @@ def index():
         it["pieza_nombre"] = p.data.get("nombre") if p and p.data else "N/A"
     return render_template("stock/index.html", items=items)
 
-@stock_bp.route("/crear", methods=["GET","POST"])
+@stock_bp.route("/crear", methods=["GET", "POST"])
 def crear():
     if request.method == "POST":
+        cantidad = int(request.form.get("cantidad") or 0)
+        if cantidad < 0:
+            flash("La cantidad no puede ser negativa", "danger")
+            return redirect(url_for("stock.crear"))
         data = {
             "pieza_id": request.form.get("pieza_id"),
             "cantidad": request.form.get("cantidad"),
             "stock_minimo": request.form.get("stock_minimo"),
-            "ubicacion": request.form.get("ubicacion")
+            "ubicacion": request.form.get("ubicacion"),
+            "ultima_actualizacion": datetime.utcnow().isoformat()
         }
         supabase.table("stock").insert(data).execute()
         flash("Item de stock creado", "success")
@@ -31,14 +38,19 @@ def crear():
     piezas = supabase.table("piezas").select("*").order("nombre").execute().data or []
     return render_template("stock/form.html", item=None, piezas=piezas)
 
-@stock_bp.route("/editar/<int:id>", methods=["GET","POST"])
+@stock_bp.route("/editar/<int:id>", methods=["GET", "POST"])
 def editar(id):
     if request.method == "POST":
+        cantidad = int(request.form.get("cantidad") or 0)
+        if cantidad < 0:
+            flash("La cantidad no puede ser negativa", "danger")
+            return redirect(url_for("stock.crear"))
         data = {
             "pieza_id": request.form.get("pieza_id"),
             "cantidad": request.form.get("cantidad"),
             "stock_minimo": request.form.get("stock_minimo"),
-            "ubicacion": request.form.get("ubicacion")
+            "ubicacion": request.form.get("ubicacion"),
+            "ultima_actualizacion": datetime.utcnow().isoformat()
         }
         supabase.table("stock").update(data).eq("id", id).execute()
         flash("Item actualizado", "success")
@@ -59,7 +71,7 @@ def pdf_stock():
     items = res.data or []
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+    width, height = letter  # Ensure letter is imported correctly
     p.setFont("Helvetica-Bold", 14)
     p.drawString(40, height-40, "Reporte de Stock")
     y = height - 70
@@ -67,7 +79,7 @@ def pdf_stock():
     for it in items:
         pieza = supabase.table("piezas").select("nombre").eq("id", it.get("pieza_id")).single().execute()
         pieza_nombre = pieza.data.get("nombre") if pieza and pieza.data else "N/A"
-        p.drawString(40, y, f"{pieza_nombre} | Cant: {it.get('cantidad')} | Min: {it.get('minimo')} | Ubicación: {it.get('ubicacion')}")
+        p.drawString(40, y, f"{pieza_nombre} | Cant: {it.get('cantidad')} | Min: {it.get('stock_minimo')} | Ubicación: {it.get('ubicacion')}")
         y -= 15
         if y < 60:
             p.showPage()

@@ -1,7 +1,22 @@
 from datetime import datetime, date
 
+def calcular_estado_pieza(fecha_caducidad: date):
+    hoy = date.today()
+    dias_restantes = (fecha_caducidad - hoy).days
+
+    if dias_restantes >= 30:
+        return dias_restantes, "verde", "En buen estado"
+    elif dias_restantes >= 7:
+        return dias_restantes, "amarillo", "Pronto a mantenimiento"
+    elif dias_restantes >= 0:
+        return dias_restantes, "rojo", "Mantenimiento urgente"
+    else:
+        return dias_restantes, "gris", "Vencida"
+
+
+"""
 def calcular_estado_pieza(p):
-    """Devuelve estado de una pieza instalada: dias restantes, color, texto."""
+    ###  Devuelve estado de una pieza instalada: dias restantes, color, texto
 
     fecha_inst = p.get("fecha_instalacion")
     vida_dias = int(p.get("vida_dias") or 0)
@@ -46,7 +61,7 @@ def calcular_estado_pieza(p):
         "estado_color": "green",
         "estado_texto": "OK"
     }
-
+"""
 
 def calcular_estado_maquina(lista_piezas):
     """
