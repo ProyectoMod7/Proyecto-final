@@ -10,7 +10,7 @@
 <table class="table table-bordered">
   <thead>
     <tr>
-      <th>ID</th><th>Nombre</th><th>Fabricante</th><th>Material</th><th>Vida útil (hrs)</th><th>Imagen</th><th>Acciones</th>
+      <th>ID</th><th>Nombre</th><th>Vida útil (días)</th><th>Imagen</th><th>Acciones</th>
     </tr>
   </thead>
   <tbody>
@@ -18,9 +18,7 @@
       <tr>
         <td>{{ p.id }}</td>
         <td>{{ p.nombre }}</td>
-        <td>{{ p.fabricante }}</td>
-        <td>{{ p.material }}</td>
-        <td>{{ p.vida_horas }}</td>
+        <td>{{ p.vida_dias }}</td>
         <td>
           {% if p.imagen_url %}
             <img src="{{ p.imagen_url }}" alt="pieza" width="60">
