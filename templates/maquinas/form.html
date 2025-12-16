@@ -33,6 +33,13 @@
                    value="{{ maquina.nro_serie if maquina else '' }}">
         </div>
 
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control"
+                    name="descripcion"
+                    rows="3">{{ maquina.descripcion if maquina else '' }}</textarea>
+        </div>
+
         <button class="btn btn-primary" type="submit">Guardar</button>
 
         <a href="{{ url_for('maquinas.index') }}" class="btn btn-secondary ms-2">
